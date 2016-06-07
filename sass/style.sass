@@ -1,0 +1,103 @@
+$header-bg: #151515
+$title-font: 100% BloggerSansMedium
+$content-font: 100% BitterSerifMedium
+$footer-height: 20px
+$content-width: 60%
+
+@font-face
+  font-family: BloggerSansMedium
+  src: url(/fonts/blogger-sans.regular.ttf)
+
+@font-face
+  font-family: BitterSerifMedium
+  src: url(/fonts/bitter-serif.regular.otf)
+
+html,
+body
+  margin: 0
+  padding: 0
+  height: 100%
+
+#wrapper
+  min-height: 100%
+  position: relative
+
+#header
+  background-color: $header-bg
+  padding: 20px 0 10px 0
+  width: 100%
+
+  *
+    font: $title-font
+    color: #D1D1D1
+
+  #logo
+    font-size: 30px
+    *
+      margin: 0
+
+  #navigation
+    margin-left: 30px
+    font-size: 20px
+    a
+      padding-left: 6px
+      text-decoration: none
+      border-left: solid 1px #555
+      &:first-child
+        border-left: none
+      &:hover
+        color: #EFEFEF
+
+  #header-content
+    width: $content-width
+    margin: auto
+    *
+      display: inline-block
+
+#content
+  width: $content-width
+  margin: auto
+  font: $content-font
+  font-size: 18px
+  padding-bottom: $footer-height * 2
+  *
+    text-rendering: optimizelegibility
+    line-height: 1.5em
+  h1
+    font-size: 26px
+  h2
+    font-size: 24px
+  h3
+    font-size: 22px
+  .info
+    font-size: 16px
+    color: #777
+  ul
+    list-style: none
+    padding: 0
+    font-size: 16px
+    li
+      padding: 10px 0 10px 0
+      border-bottom: solid 1px #999
+      &:last-child
+        border-bottom: none
+  a#to-archive
+    padding: 7px 15px 7px 15px
+    color: #D1D1D1
+    background-color: $header-bg
+    border-radius: 10px
+    text-decoration: none
+    &:hover
+      color: #EFEFEF
+
+
+#footer
+  min-height: $footer-height
+  width: 100%
+  position: absolute
+  bottom: 0
+  right: 0
+  font: $title-font
+  text-align: center
+  *
+    font: $title-font
