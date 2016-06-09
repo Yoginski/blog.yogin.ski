@@ -1,29 +1,120 @@
 ---
-title: Создание раздела с персистентным хранилищем в live iso
+title: Раздел с персистентным хранилищем в live iso
 ---
 
-Mauris in lorem nisl. Maecenas tempus facilisis ante, eget viverra nisl
-tincidunt et. Donec turpis lectus, mattis ac malesuada a, accumsan eu libero.
-Morbi condimentum, tortor et tincidunt ullamcorper, sem quam pretium nulla, id
-convallis lectus libero nec turpis. Proin dapibus nisi id est sodales nec
-ultrices tortor pellentesque. 
+### Зачем
 
-Vivamus vel nisi ac lacus sollicitudin vulputate
-ac ut ligula. Nullam feugiat risus eget eros gravida in molestie sapien euismod.
-Nunc sed hendrerit orci. Nulla mollis consequat lorem ac blandit. Ut et turpis
-mauris. Nulla est odio, posuere id ullamcorper sit amet, tincidunt vel justo.
-Curabitur placerat tincidunt varius. Nulla vulputate, ipsum eu consectetur
-mollis, dui nibh aliquam neque, at ultricies leo ligula et arcu.
+Решил я обзавестись live USB с легковесным дистрибутивом linux для пентестов.
 
-Vivamus vel nisi ac lacus sollicitudin vulputate
-ac ut ligula. Nullam feugiat risus eget eros gravida in molestie sapien euismod.
-Nunc sed hendrerit orci. Nulla mollis consequat lorem ac blandit. Ut et turpis
-mauris. Nulla est odio, posuere id ullamcorper sit amet, tincidunt vel justo.
-Curabitur placerat tincidunt varius. Nulla vulputate, ipsum eu consectetur
-mollis, dui nibh aliquam neque, at ultricies leo ligula et arcu.
-Vivamus vel nisi ac lacus sollicitudin vulputate
-ac ut ligula. Nullam feugiat risus eget eros gravida in molestie sapien euismod.
-Nunc sed hendrerit orci. Nulla mollis consequat lorem ac blandit. Ut et turpis
-mauris. Nulla est odio, posuere id ullamcorper sit amet, tincidunt vel justo.
-Curabitur placerat tincidunt varius. Nulla vulputate, ipsum eu consectetur
-mollis, dui nibh aliquam neque, at ultricies leo ligula et arcu.
+Почему live USB?
+
+1. Это позволяет мгновенно развернуть на любой (почти) попавшейся машине сносное рабочее окружение.
+2. После перезагрузки все данные уничтожаются, что уменьшает риск утечки данных клиентов.
+
+Но есть у второго пункта один нюанс: некоторые данные иногда все-же нужно хранить.
+Значит нужно сделать так, чтобы помимо основного раздела с операционной системой, был второй, зашифрованный.
+Если мне не изменяет память, опция персистентного хранилища имеется у Kali Live USB, но с Kali у меня как-то сразу не сложилось (мягко говоря).
+
+### Как
+
+Описывать способы создания iso образа я здесь не буду, готовый iso'шник любого дистрибутива подойдет.
+
+Суть заключается в том, что нужно "растянуть" образ и зашифровать/отформатировать получившееся свободное место.
+Звучит просто, делается долго и нудно.
+Все последующие инструкции воспроизводились на **Arch Linux**, но с небольшими модификациями их можно применить на любом другом дистрибутиве.
+
+#### Растягиваем образ
+
+Для начала скопируем образ, так как вернуть его к изначальному виду будет проблематично.
+Допустим, что имя образа, который мы собираемся усовершенствовать - blarch.iso.
+
+Затем, нужно определить размер образа и USB устройства, на которое мы планируем записать этот образ.
+Естественно, размер этого устройства должен быть больше размера образа.
+Подключим USB устройство. Нужно это для того, чтобы определить точный её размер.
+Допустим, это устройство подключилось как /dev/sdX.\
+
+Пусть размер блока будет равен 512 байт.
+Нам нужно узнать размеры устройства и образа в байтах, разделить каждое значение на 512 и вычислить их разность по модулю. 
+
+Это можно сделать с помощью следующего скрипта (не забываем заменить /dev/sdX и blarch.iso на реальные значения):
+```bash
+#!/bin/bash
+
+set -e
+
+USB_BYTES=$(sudo fdisk -l /dev/sdX | awk 'NR==1{print $5}')
+ISO_BYTES=$(fdisk -l blarch.iso | awk 'NR==1{print $5}')
+USB_BLOCKS=$(echo $USB_BYTES / 512 | bc)
+ISO_BLOCKS=$(echo $ISO_BYTES / 512 | bc)
+DIFF=$(echo $USB_BLOCKS - $ISO_BLOCKS | bc)
+echo $DIFF
+```
+
+Вышеуказанный скрипт можно исполнить как "source ./my_script.sh", тогда переменные (DIFF, USB_BYTES и т. д.) будут доступны извне.
+
+Таким образом, в переменной $DIFF будет храниться значение, на которое нужно "растянуть" наш iso образ.
+
+```bash
+dd status=progress if=/dev/zero bs=512 count=$DIFF >> blarch.iso
+```
+
+Осталось немного подождать, и первый шаг можно считать пройденным.
+
+#### Создаем и подготавливаем раздел
+
+Создать раздел можно утилитой fdisk.
+Выполняем `fdisk blarch.iso` жмем n, лупим по клавише Enter до победного конца, жмем w, снова Enter - готово!
+
+С форматированием все сложнее.\
+Чтобы зашифровать и/или отформатировать получившийся раздел, нужно смонтировать его как loopback устройство.
+
+Сначала нам нужно будет определить начало и конец только что созданного раздела.
+Снова вызываем `fdisk -l blarch.iso`, находим в списке наш раздел, запоминаем значения в колонках Start и End и умножаем каждое из них на 512.
+Пусть значение Start, умноженное на 512, будет называться **OFFSET**, а End, умноженное на 512 - **SIZELIMIT**.
+
+Выполняем следующую команду: 
+```bash
+sudo losetup -o $OFFSET --sizelimit $SIZELIMIT /dev/loop1 blarch.iso
+```
+Теперь наш раздел доступен как /dev/loop1. Его можно форматировать, шифровать или форматировать как любое другое блочное устройство.
+
+Рассмотрим шифрование на примере *dm-crypt*.
+
+Следующие команды зашифруют наш раздел, подключат его как /dev/mapper/persistent и отформатируют.
+```bash
+sudo cryptsetup -v luksFormat /dev/loop1
+sudo cryptsetup -v open /dev/loop1 persistent
+sudo mkfs -t ext3 /dev/mapper/persistent
+```
+
+Примонтируем полученный раздел командой `sudo mount /dev/mapper/persistent /mnt/persistent` (предварительно создав папку */mnt/persistent*, естественно). Если необходимо, кладем в папку /mnt/persistent файлы, которые могут пригодиться.
+
+Размонтируем всё, что нужно:
+```bash
+sudo umount /dev/mapper/persistent
+sudo cryptsetup close persistent
+losetup -d /dev/loop1
+```
+
+#### Финишная прямая
+
+От работающего live USB нас отделяет всего одна команда:
+```bash
+dd status=progress if=blarch.iso of=/dev/sdX bs=512
+```
+
+Эта команда может занять **очень** много времени, в зависимости от размера и скорости записи USB устройства.
+
+### Как пользоваться
+
+Как и любым другим зашифрованным разделом.
+
+После загрузки в live USB, находим имя нашего раздела, пусть будет /dev/sdY.
+Вызываем команды:
+```bash
+sudo cryptsetup -v open /dev/sdY persistent
+sudo mount /dev/mapper/persistent /mnt/persistent
+```
+Готово, раздел смонтирован.\
+После перезагрузки, live система будет так же откатываться к изначальному состоянию.
+Кроме зашифрованного раздела, который мы с вами создали.

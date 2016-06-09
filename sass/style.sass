@@ -2,7 +2,6 @@ $header-bg: #151515
 $title-font: 100% BloggerSansMedium
 $content-font: 100% BitterSerifMedium
 $footer-height: 20px
-$content-width: 60%
 
 @font-face
   font-family: BloggerSansMedium
@@ -26,19 +25,38 @@ body
   background-color: $header-bg
   padding: 20px 0 10px 0
   width: 100%
-
   *
     font: $title-font
     color: #D1D1D1
 
+  #header-content
+    width: 60%
+
+    @media only screen and (max-device-width: 800px)
+      width: 70%
+
+    @media only screen and (max-device-width: 480px)
+      width: 80%
+
+    margin: auto
+
   #logo
     font-size: 30px
+    display: inline-block
+    @media only screen and (max-device-width: 800px)
+      display: block
     *
       margin: 0
 
   #navigation
     margin-left: 30px
     font-size: 20px
+    display: inline-block
+    @media only screen and (max-device-width: 800px)
+      display: block
+      margin: 10px 0 0 0
+      *:first-child
+        padding-left: 0
     a
       padding-left: 6px
       text-decoration: none
@@ -48,21 +66,22 @@ body
       &:hover
         color: #EFEFEF
 
-  #header-content
-    width: $content-width
-    margin: auto
-    *
-      display: inline-block
-
 #content
-  width: $content-width
+  width: 60%
+
+  @media only screen and (max-device-width: 800px)
+    width: 70%
+
+  @media only screen and (max-device-width: 480px)
+    width: 80%
+
   margin: auto
   font: $content-font
-  font-size: 18px
   padding-bottom: $footer-height * 2
   *
-    text-rendering: optimizelegibility
     line-height: 1.5em
+
+  font-size: 18px
   h1
     font-size: 26px
   h2
@@ -72,6 +91,9 @@ body
   .info
     font-size: 16px
     color: #777
+  code
+    font-size: 16px
+
   ul
     list-style: none
     padding: 0
