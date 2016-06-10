@@ -3,6 +3,7 @@
 ### Haskell ###
 dist
 cabal-dev
+./deploy.sh
 *.o
 *.hi
 *.chi
